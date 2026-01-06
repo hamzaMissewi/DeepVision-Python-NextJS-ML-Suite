@@ -35,6 +35,11 @@ def run_pipeline(smoke_test=False):
     else:
         epochs = Config.EPOCHS
 
+    # Prepare tf.data Datasets
+    train_ds = data_loader.get_dataset(x_train, y_train, shuffle=True, augment=True)
+    val_ds = data_loader.get_dataset(x_val, y_val)
+    test_ds = data_loader.get_dataset(x_test, y_test)
+
     comparison = ModelComparison()
     visualizer = ModelVisualizer()
     trained_models = []
@@ -43,7 +48,8 @@ def run_pipeline(smoke_test=False):
     print("\nStage 2: Custom CNN")
     cnn = CustomCNN().build_model()
     cnn_trainer = ModelTrainer(cnn, "CustomCNN")
-    cnn_history = cnn_trainer.train(x_train, y_train, x_val, y_val, epochs=epochs)
+        # cnn_history = cnn_trainer.train(x_train, y_train, x_val, y_val, epochs=epochs)
+    cnn_history = cnn_trainer.train(train_ds, val_ds, epochs=epochs)
     cnn_results = cnn_trainer.evaluate(x_test, y_test, data_loader.class_names)
     
     visualizer.plot_training_history(cnn_history, "CustomCNN")
@@ -62,16 +68,14 @@ def run_pipeline(smoke_test=False):
     resnet_trainer = ModelTrainer(resnet_model, "ResNet50_Transfer")
     
     # Initial training
-    resnet_trainer.train(x_train, y_train, x_val, y_val, 
-                        epochs=1 if smoke_test else Config.TL_INITIAL_EPOCHS, 
-                        use_augmentation=False)
+    resnet_trainer.train(train_ds, val_ds, 
+                        epochs=1 if smoke_test else Config.TL_INITIAL_EPOCHS)
     
     # Fine-tuning
     print("Fine-tuning ResNet50...")
     resnet_model = tl_manager.unfreeze_and_fine_tune(resnet_model)
-    resnet_history = resnet_trainer.train(x_train, y_train, x_val, y_val, 
-                                        epochs=1 if smoke_test else Config.TL_FINE_TUNE_EPOCHS, 
-                                        use_augmentation=False)
+    resnet_history = resnet_trainer.train(train_ds, val_ds, 
+                                        epochs=1 if smoke_test else Config.TL_FINE_TUNE_EPOCHS)
     
     resnet_results = resnet_trainer.evaluate(x_test, y_test, data_loader.class_names)
     visualizer.plot_training_history(resnet_history, "ResNet50_Transfer")
@@ -84,7 +88,7 @@ def run_pipeline(smoke_test=False):
     print("\nStage 4: Vision Transformer")
     vit_model = VisionTransformer().build_model()
     vit_trainer = ModelTrainer(vit_model, "VisionTransformer")
-    vit_history = vit_trainer.train(x_train, y_train, x_val, y_val, epochs=epochs)
+    vit_history = vit_trainer.train(train_ds, val_ds, epochs=epochs)
     vit_results = vit_trainer.evaluate(x_test, y_test, data_loader.class_names)
     
     visualizer.plot_training_history(vit_history, "VisionTransformer")

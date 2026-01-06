@@ -1,4 +1,5 @@
 import tensorflow as tf
+import os
 from typing import Tuple
 
 class Config:
@@ -31,9 +32,13 @@ class Config:
     VIT_TRANSFORMER_LAYERS: int = 4
     
     # Paths
-    LOG_DIR: str = './logs'
-    MODEL_SAVE_PATH: str = './models'
-    OUTPUT_DIR: str = './outputs'
+    LOG_DIR: str = os.path.join(os.getcwd(), 'logs')
+    MODEL_SAVE_PATH: str = os.path.join(os.getcwd(), 'models')
+    OUTPUT_DIR: str = os.path.join(os.getcwd(), 'outputs')
+
+    # API Settings
+    API_HOST: str = "0.0.0.0"
+    API_PORT: int = 8000
 
     @staticmethod
     def setup_gpu():

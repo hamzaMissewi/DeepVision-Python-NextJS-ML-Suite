@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 from tensorflow.keras.datasets import fashion_mnist
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from typing import Tuple
@@ -8,6 +9,7 @@ class DataLoader:
     """
     Handles all data loading, preprocessing, and augmentation operations.
     This class ensures consistent data preparation across all models.
+    Using tf.data.Dataset for high-performance input pipelines.
     """
     
     def __init__(self):
@@ -47,7 +49,7 @@ class DataLoader:
         print(f"Image shape: {x_train[0].shape}")
         
         return x_train, y_train, x_val, y_val, x_test, y_test
-    
+
     def create_data_generators(self, x_train: np.ndarray) -> ImageDataGenerator:
         """
         Create data augmentation generator for training.
@@ -63,3 +65,29 @@ class DataLoader:
         
         datagen.fit(x_train)
         return datagen
+
+    def get_dataset(self, x, y, batch_size=None, shuffle=False, augment=False):
+        """
+        Convert numpy arrays to an optimized tf.data.Dataset.
+        """
+        batch_size = batch_size or Config.BATCH_SIZE
+        dataset = tf.data.Dataset.from_tensor_slices((x, y))
+        
+        if shuffle:
+            dataset = dataset.shuffle(buffer_size=10000)
+            
+        if augment:
+            dataset = dataset.map(self._augment, num_parallel_calls=tf.data.AUTOTUNE)
+            
+        dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+        
+        # Cache for small datasets like Fashion MNIST
+        dataset = dataset.cache()
+        
+        return dataset
+
+    def _augment(self, image, label):
+        """Simple augmentation logic using tf.image."""
+        image = tf.image.random_flip_left_right(image)
+        # Add more augmentations as needed
+        return image, label

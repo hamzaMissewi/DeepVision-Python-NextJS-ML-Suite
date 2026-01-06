@@ -49,10 +49,9 @@ class ModelTrainer:
         
         return callbacks
     
-    def train(self, x_train, y_train, x_val, y_val,
-              epochs: int = Config.EPOCHS, batch_size: int = Config.BATCH_SIZE,
-              use_augmentation: bool = True) -> Dict:
-        """Train the model with optional data augmentation."""
+    def train(self, train_ds, val_ds,
+              epochs: int = Config.EPOCHS) -> Dict:
+        """Train the model with pre-built tf.data Datasets."""
         print(f"\n{'='*60}")
         print(f"Training {self.model_name}")
         print(f"{'='*60}\n")
@@ -64,22 +63,24 @@ class ModelTrainer:
             dl = DataLoader()
             datagen = dl.create_data_generators(x_train)
             
-            self.history = self.model.fit(
-                datagen.flow(x_train, y_train, batch_size=batch_size),
-                epochs=epochs,
-                validation_data=(x_val, y_val),
-                callbacks=callbacks,
-                verbose=1
+        self.history = self.model.fit(
+                # datagen.flow(x_train, y_train, batch_size=batch_size),
+                        train_ds,
+            epochs=epochs,
+            validation_data=(x_val, y_val),
+            callbacks=callbacks,
+            verbose=1
             )
         else:
             self.history = self.model.fit(
-                x_train, y_train,
-                batch_size=batch_size,
-                epochs=epochs,
-                validation_data=(x_val, y_val),
-                callbacks=callbacks,
-                verbose=1
-            )
+            x_train, y_train,
+            batch_size=batch_size,
+            epochs=epochs,
+            validation_data=(x_val, y_val),
+            validation_data=val_ds,
+            callbacks=callbacks,
+            verbose=1
+        )
         
         return self.history.history
     
